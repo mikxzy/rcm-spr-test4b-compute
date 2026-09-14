@@ -1,0 +1,52 @@
+name: test4b-qe-probe2
+# Level-C Test 4B: same as test4b-qe-probe but exposes --nk (QE k-point pools) so the orchestrator can gather
+# k-point-pool scaling data on an already-required bulk-validation job before committing the full FC1 displacement
+# matrix (which uses double the k-points, nosym/noinv, on the same 4-core standard runner).
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        default: bulkxv_AlAs_fd_000
+        required: true
+      np:
+        default: "4"
+        required: true
+      nk:
+        description: QE -nk (k-point pools); must divide np
+        default: "1"
+        required: true
+      runner:
+        default: ubuntu-latest
+        required: true
+
+jobs:
+  probe:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 355
+    container:
+      image: condaforge/miniforge3:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen QE environment
+        run: |
+          mamba install -y -c conda-forge "qe=7.5=h19104ac_2" "openmpi=5.0.10=hee33aa4_2" "libopenblas=0.3.34=pthreads_hf13c14d_2" "fftw=3.3.11=nompi_h3b011a4_100" "scalapack=2.2.0=h606478a_6" "elpa=2025.06.001=mpi_openmpi_h335e491_1" numpy time
+          mamba clean -afy
+          ln -s "$GITHUB_WORKSPACE/runs/level_c_gaas_alas_test4b/dft" /work
+          nproc; grep -E 'MemTotal|MemAvailable' /proc/meminfo
+      - name: Run frozen job ${{ inputs.job_id }} (nk=${{ inputs.nk }})
+        env:
+          OMPI_ALLOW_RUN_AS_ROOT: "1"
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python level_c/gaas_alas/fc1/gh_job.py --job "${{ inputs.job_id }}" --np "${{ inputs.np }}" --nk "${{ inputs.nk }}" --out "artifacts/${{ inputs.job_id }}" || echo "gh_job exit $?"
+          cat "artifacts/${{ inputs.job_id }}/result.json" | head -60
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ inputs.job_id }}
+          path: artifacts/${{ inputs.job_id }}
+          if-no-files-found: error
+          retention-days: 90

@@ -32,8 +32,9 @@ def env_record():
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--job', required=True); ap.add_argument('--np', type=int, default=4); ap.add_argument('--out'); ap.add_argument('--max-seconds', type=int, default=0)
+    ap.add_argument('--nk', type=int, default=1, help='QE k-point pools (-nk): pure MPI work distribution, no effect on the converged result')
     a = ap.parse_args(); jobs = json.load(open(Q / 'jobs.json')); job = jobs[a.job]; d = DFT / job['dir']; out = Path(a.out) if a.out else d / 'artifact'; out.mkdir(parents=True, exist_ok=True)
-    pre = json.load(open(OUT4B / 'TEST4B_PREREGISTRATION.json')); res = dict(job=job, started=time.strftime('%Y-%m-%dT%H:%M:%S'), np=a.np, environment=env_record())
+    pre = json.load(open(OUT4B / 'TEST4B_PREREGISTRATION.json')); res = dict(job=job, started=time.strftime('%Y-%m-%dT%H:%M:%S'), np=a.np, nk=a.nk, environment=env_record())
     # ---- preconditions: frozen input + pseudopotential hashes
     h = sha(d / 'pw.in'); res['pwin_sha256_observed'] = h; res['pseudopotentials'] = {}
     ok = h == job['pwin_sha256']
@@ -59,7 +60,7 @@ def main():
             stop.wait(10)
     gtime = next((t for t in [shutil.which('time'), '/usr/bin/time', '/opt/conda/bin/time'] if t and Path(t).exists()), None)
     timer = f'{gtime} -v -o time.txt ' if gtime else ''; res['gnu_time'] = gtime
-    cmd = f'cd "{d}" && {timer}mpirun --oversubscribe --bind-to none -np {a.np} pw.x -nk 1 -in pw.in > pw.out 2> pw.err'
+    cmd = f'cd "{d}" && {timer}mpirun --oversubscribe --bind-to none -np {a.np} pw.x -nk {a.nk} -in pw.in > pw.out 2> pw.err'
     t0 = time.time(); th = threading.Thread(target=sampler, daemon=True); th.start(); p = subprocess.run(cmd, shell=True); stop.set(); th.join(timeout=1); wall = time.time() - t0
     subprocess.run('rm -rf /tmp/qe_*', shell=True)
     peak_rss_kb = None
