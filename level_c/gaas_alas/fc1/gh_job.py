@@ -77,6 +77,11 @@ def main():
         elif not bool(__import__('numpy').isfinite(r['F_final']).all()): why.append('non-finite forces')
         if r['stress_final'] is None: why.append('stress missing')
         if job['calc'] == 'vc-relax' and not (r['bfgs_converged'] and r['final_cell_A'] is not None): why.append('BFGS not converged / no final coordinates')
+        if job['calc'] == 'vc-relax-chunk':
+            txt = (d / 'pw.out').read_text(errors='ignore'); finished = r['bfgs_converged'] and r['final_cell_A'] is not None
+            stopped = 'Maximum CPU time exceeded' in txt and 'ATOMIC_POSITIONS' in txt
+            res['chunk'] = dict(finished=bool(finished), stopped_at_max_seconds=bool(stopped), n_bfgs_steps=len(r['energies_Ry']))
+            if not (finished or stopped): why.append('chunk neither converged nor cleanly stopped at max_seconds')
         res.update(E_final_Ry=r['E_final_Ry'], n_scf_energies=len(r['energies_Ry']), n_kpoints=r['n_kpoints'], n_bands=r['n_bands'], qe_ram_estimate=r['ram'], qe_wall=r['wall'], max_force_eV_A=float(abs(r['F_final']).max()) if r['F_final'] is not None else None)
     res['integrity'] = dict(ok=not why, issues=why); res['status'] = 'DONE' if not why and p.returncode == 0 else 'FAILED'; res['reason'] = 'ok' if res['status'] == 'DONE' else '; '.join(why) or f'exit {p.returncode}'
     res['output_hashes'] = {f: sha(d / f) for f in ['pw.in', 'pw.out', 'pw.err', 'time.txt'] if (d / f).exists()}; res['ended'] = time.strftime('%Y-%m-%dT%H:%M:%S')

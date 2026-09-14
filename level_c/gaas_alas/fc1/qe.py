@@ -18,12 +18,12 @@ SETTINGS = dict(ecutwfc_Ry=60.0, ecutrho_Ry=480.0, conv_thr_Ry=1e-10, occupation
                 forc_conv_thr_eV_A=1e-4, etot_conv_thr_Ry=1e-7, press_conv_thr_kbar=0.1, displacement_A=0.03)
 
 
-def write_pwin(path, calc, cell_A, symbols, frac, kpts=(4, 4, 1), kshift=(1, 1, 0), prefix='pw', cell_dofree=None, nosym=False, nbnd=None, extra_system=None, settings=SETTINGS, disk_io='medium', diagonalization='david'):
+def write_pwin(path, calc, cell_A, symbols, frac, kpts=(4, 4, 1), kshift=(1, 1, 0), prefix='pw', cell_dofree=None, nosym=False, nbnd=None, extra_system=None, settings=SETTINGS, disk_io='medium', diagonalization='david', extra_control=''):
     """disk_io='medium' keeps one k-point's wavefunctions in memory (others on container-local scratch); diagonalization
     selects the iterative eigensolver — both are memory/algorithm choices with no effect on converged results."""
     species = []; [species.append(s) for s in symbols if s not in species]
     L = [f"&CONTROL\n  calculation='{calc}'\n  prefix='{prefix}'\n  pseudo_dir='/work/pseudo'\n  outdir='/tmp/qe_{prefix}'\n  tprnfor=.true.\n  tstress=.true.\n  disk_io='{disk_io}'\n  verbosity='low'\n"
-         f"  forc_conv_thr={settings['forc_conv_thr_eV_A'] / RYBOHR_EVA:.3e}\n  etot_conv_thr={settings['etot_conv_thr_Ry']:.1e}\n/\n"
+         f"  forc_conv_thr={settings['forc_conv_thr_eV_A'] / RYBOHR_EVA:.3e}\n  etot_conv_thr={settings['etot_conv_thr_Ry']:.1e}\n" + extra_control + "/\n"
          f"&SYSTEM\n  ibrav=0\n  nat={len(symbols)}\n  ntyp={len(species)}\n  ecutwfc={settings['ecutwfc_Ry']}\n  ecutrho={settings['ecutrho_Ry']}\n  occupations='{settings['occupations']}'\n"
          + ("  nosym=.true.\n  noinv=.true.\n" if nosym else '') + (f"  nbnd={nbnd}\n" if nbnd else '') + (extra_system or '') + "/\n"
          f"&ELECTRONS\n  conv_thr={settings['conv_thr_Ry']:.1e}\n  mixing_beta={settings['mixing_beta']}\n  electron_maxstep=200\n  diagonalization='{diagonalization}'\n/\n"]
@@ -35,7 +35,7 @@ def write_pwin(path, calc, cell_A, symbols, frac, kpts=(4, 4, 1), kshift=(1, 1, 
     L.append('CELL_PARAMETERS angstrom\n' + ''.join('  ' + ' '.join(f'{v:.10f}' for v in row) + '\n' for row in np.asarray(cell_A)))
     L.append('ATOMIC_POSITIONS crystal\n' + ''.join(f'  {s} ' + ' '.join(f'{v:.10f}' for v in f) + '\n' for s, f in zip(symbols, np.asarray(frac))))
     L.append('K_POINTS automatic\n  ' + ' '.join(map(str, kpts)) + ' ' + ' '.join(map(str, kshift)) + '\n')
-    Path(path).write_text(''.join(L)); return Path(path)
+    Path(path).write_bytes(''.join(L).encode('ascii')); return Path(path)        # LF line endings on every platform (hash-stable)
 
 
 def run_pw(calc_dir: Path, np_=6, npool=1, timeout_s=48 * 3600, infile='pw.in', outfile='pw.out'):
