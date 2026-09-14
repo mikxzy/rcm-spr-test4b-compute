@@ -1,0 +1,21 @@
+{
+ "generated": "2026-09-14T12:32:32",
+ "stage": null,
+ "jobs": [
+  "bulkxv_GaAs_fd_000",
+  "bulkxv_GaAs_fd_001",
+  "bulkxv_AlAs_vcrelax",
+  "bulkxv_AlAs_fd_000",
+  "bulkxv_AlAs_fd_001",
+  "fc1_relax"
+ ],
+ "frozen_manifest_sha256": null,
+ "job_hashes": {
+  "bulkxv_GaAs_fd_000": "56f17417296928f1229887987f8e846136bd9494f4194ad825ba17be0d38c554",
+  "bulkxv_GaAs_fd_001": "81dd0b9dc59a0bcb67fbc32c7ac7f557ae99369b638ad779ab0532a11274e8f5",
+  "bulkxv_AlAs_vcrelax": "4bda6472ae5b00edb5ca63e5c559f56d171a3d6ce204b2e94ac3a10f6b26b576",
+  "bulkxv_AlAs_fd_000": "9b52602f3819eb69d328bf1a107f158329fd8066de036a920264f5a51b12475e",
+  "bulkxv_AlAs_fd_001": "123854223a8a92397f63d8a1dda8e06d7b4f067ac59368737902c29140602853",
+  "fc1_relax": "bb6322a098d7452c3e0a5804d27adbc09f25ccd7a61775f2742cae90c9a37c88"
+ }
+}

@@ -1,0 +1,42 @@
+name: test4b-qe-collect
+# Level-C Test 4B: aggregate the per-job artifacts of one or more displacement/probe runs into a machine-readable
+# completion manifest (status, reason, hashes, wall, peak memory per job). No scientific processing happens here:
+# IFC assembly, D_AB extraction, AGF validation and gates are performed by the agent after downloading the artifacts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_ids:
+        description: comma-separated run ids whose artifacts to aggregate
+        required: true
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts of the listed runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_IDS: ${{ inputs.run_ids }}
+        run: |
+          mkdir -p collected
+          for r in $(echo "$RUN_IDS" | tr ',' ' '); do gh run download "$r" -R "$GITHUB_REPOSITORY" -D "collected/run-$r" || echo "run $r: download failed"; done
+          find collected -name result.json | wc -l
+      - name: Completion manifest
+        run: |
+          python3 - <<'EOF'
+          import json, glob, os, time
+          man = dict(generated=time.strftime('%Y-%m-%dT%H:%M:%S'), runs=os.environ['RUN_IDS'].split(','), jobs={})
+          for f in sorted(glob.glob('collected/run-*/*/result.json')):
+              r = json.load(open(f)); j = r['job']['id']
+              man['jobs'][j] = dict(status=r['status'], reason=r['reason'], wall_s=r.get('wall_s'), peak_rss_per_rank_MB=r.get('peak_rss_per_rank_MB'), peak_system_used_MB=r.get('peak_system_used_MB'),
+                                    pwin_sha256=r['job']['pwin_sha256'], output_hashes=r.get('output_hashes'), run_dir=os.path.dirname(f), runner=r['environment']['github'])
+          man['summary'] = {s: sum(1 for v in man['jobs'].values() if v['status'] == s) for s in ['DONE', 'FAILED']}
+          json.dump(man, open('completion_manifest.json', 'w'), indent=1); print(json.dumps(man['summary']))
+          EOF
+        env:
+          RUN_IDS: ${{ inputs.run_ids }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: completion-manifest
+          path: completion_manifest.json

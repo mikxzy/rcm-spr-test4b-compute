@@ -1,0 +1,79 @@
+{
+ "bulkxv_GaAs_vcrelax": {
+  "id": "bulkxv_GaAs_vcrelax",
+  "dir": "bulkxv_GaAs_vcrelax",
+  "calc": "vc-relax",
+  "stage": "bulkxv",
+  "deps": [],
+  "n_atoms": 2,
+  "np": 6,
+  "pwin_sha256": "ed2676d49f533fcab30bcd562d5edfc2044fe8a2e13c8731bee603142ccce17f",
+  "created": "2026-09-14T11:55:19"
+ },
+ "bulkxv_GaAs_fd_000": {
+  "id": "bulkxv_GaAs_fd_000",
+  "dir": "bulkxv_GaAs_fd/disp-000",
+  "calc": "scf",
+  "stage": "bulkxv",
+  "deps": [],
+  "n_atoms": 64,
+  "np": null,
+  "pwin_sha256": "56f17417296928f1229887987f8e846136bd9494f4194ad825ba17be0d38c554",
+  "created": "2026-09-14T11:55:19"
+ },
+ "bulkxv_GaAs_fd_001": {
+  "id": "bulkxv_GaAs_fd_001",
+  "dir": "bulkxv_GaAs_fd/disp-001",
+  "calc": "scf",
+  "stage": "bulkxv",
+  "deps": [],
+  "n_atoms": 64,
+  "np": null,
+  "pwin_sha256": "81dd0b9dc59a0bcb67fbc32c7ac7f557ae99369b638ad779ab0532a11274e8f5",
+  "created": "2026-09-14T11:55:19"
+ },
+ "bulkxv_AlAs_vcrelax": {
+  "id": "bulkxv_AlAs_vcrelax",
+  "dir": "bulkxv_AlAs_vcrelax",
+  "calc": "vc-relax",
+  "stage": "bulkxv",
+  "deps": [],
+  "n_atoms": 2,
+  "np": 6,
+  "pwin_sha256": "4bda6472ae5b00edb5ca63e5c559f56d171a3d6ce204b2e94ac3a10f6b26b576",
+  "created": "2026-09-14T11:55:22"
+ },
+ "bulkxv_AlAs_fd_000": {
+  "id": "bulkxv_AlAs_fd_000",
+  "dir": "bulkxv_AlAs_fd/disp-000",
+  "calc": "scf",
+  "stage": "bulkxv",
+  "deps": [],
+  "n_atoms": 64,
+  "np": null,
+  "pwin_sha256": "9b52602f3819eb69d328bf1a107f158329fd8066de036a920264f5a51b12475e",
+  "created": "2026-09-14T11:55:22"
+ },
+ "bulkxv_AlAs_fd_001": {
+  "id": "bulkxv_AlAs_fd_001",
+  "dir": "bulkxv_AlAs_fd/disp-001",
+  "calc": "scf",
+  "stage": "bulkxv",
+  "deps": [],
+  "n_atoms": 64,
+  "np": null,
+  "pwin_sha256": "123854223a8a92397f63d8a1dda8e06d7b4f067ac59368737902c29140602853",
+  "created": "2026-09-14T11:55:22"
+ },
+ "fc1_relax": {
+  "id": "fc1_relax",
+  "dir": "fc1_relax",
+  "calc": "vc-relax",
+  "stage": "relax",
+  "deps": [],
+  "n_atoms": 64,
+  "np": 6,
+  "pwin_sha256": "bb6322a098d7452c3e0a5804d27adbc09f25ccd7a61775f2742cae90c9a37c88",
+  "created": "2026-09-14T11:55:22"
+ }
+}

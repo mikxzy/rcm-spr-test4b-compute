@@ -1,0 +1,81 @@
+name: test4b-qe-displacements
+# Level-C Test 4B: parallel matrix of independent frozen QE jobs (finite displacements, bulk cross-validation, checks).
+# The job list comes from a checked-in, agent-generated matrix file listing ONLY missing/failed jobs
+# (runs/level_c_gaas_alas_test4b/queue/gh_matrix.json), itself derived from the frozen displacement manifest.
+# One immutable job package per matrix entry; one artifact per job; fail-fast disabled so a single failure never
+# cancels the others. Failed jobs stay FAILED (never replaced by synthetic forces).
+
+on:
+  workflow_dispatch:
+    inputs:
+      matrix_file:
+        description: 'JSON file with a "jobs" list of job ids (relative to repo root)'
+        default: runs/level_c_gaas_alas_test4b/queue/gh_matrix.json
+        required: true
+      max_parallel:
+        description: max concurrent jobs
+        default: "10"
+        required: true
+      np:
+        description: MPI ranks per job
+        default: "4"
+        required: true
+      runner:
+        default: ubuntu-latest
+        required: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      jobs: ${{ steps.read.outputs.jobs }}
+      n: ${{ steps.read.outputs.n }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          m = json.load(open(os.environ['MF'])); ids = m['jobs']
+          print('jobs=' + json.dumps(ids)); print('n=%d' % len(ids))
+          EOF
+        env:
+          MF: ${{ inputs.matrix_file }}
+      - run: echo "matrix size ${{ steps.read.outputs.n }}"
+
+  qe:
+    needs: plan
+    if: needs.plan.outputs.n != '0'
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel) }}
+      matrix:
+        job: ${{ fromJSON(needs.plan.outputs.jobs) }}
+    container:
+      image: condaforge/miniforge3:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen QE environment
+        run: |
+          mamba install -y -c conda-forge "qe=7.5=h19104ac_2" "openmpi=5.0.10=hee33aa4_2" "libopenblas=0.3.34=pthreads_hf13c14d_2" "fftw=3.3.11=nompi_h3b011a4_100" "scalapack=2.2.0=h606478a_6" "elpa=2025.06.001=mpi_openmpi_h335e491_1" numpy time
+          mamba clean -afy
+          ln -s "$GITHUB_WORKSPACE/runs/level_c_gaas_alas_test4b/dft" /work
+          nproc; grep -E 'MemTotal|MemAvailable' /proc/meminfo
+      - name: Run frozen job ${{ matrix.job }}
+        env:
+          OMPI_ALLOW_RUN_AS_ROOT: "1"
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python level_c/gaas_alas/fc1/gh_job.py --job "${{ matrix.job }}" --np "${{ inputs.np }}" --out "artifacts/${{ matrix.job }}" || echo "gh_job exit $?"
+          python3 -c "import json; r=json.load(open('artifacts/${{ matrix.job }}/result.json')); print(r['status'], r['reason'], 'wall', r.get('wall_s'), 'peak/rank MB', r.get('peak_rss_per_rank_MB'))"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.job }}
+          path: artifacts/${{ matrix.job }}
+          if-no-files-found: error
+          retention-days: 90

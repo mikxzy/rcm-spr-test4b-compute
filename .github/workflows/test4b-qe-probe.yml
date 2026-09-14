@@ -1,0 +1,52 @@
+name: test4b-qe-probe
+# Level-C Test 4B: run ONE frozen Quantum ESPRESSO job (representative probe) on a GitHub-hosted runner.
+# Physics/settings are frozen in the repository (runs/level_c_gaas_alas_test4b/dft/**/pw.in, queue/jobs.json,
+# TEST4B_PREREGISTRATION.json); this workflow only provides compute and records the environment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: Job id from runs/level_c_gaas_alas_test4b/queue/jobs.json
+        default: bulkxv_GaAs_fd_000
+        required: true
+      np:
+        description: MPI ranks
+        default: "4"
+        required: true
+      runner:
+        description: runs-on label (ubuntu-latest = 4 vCPU / 16 GB; larger runners need a paid plan)
+        default: ubuntu-latest
+        required: true
+
+jobs:
+  probe:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 355
+    container:
+      image: condaforge/miniforge3:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen QE environment (same conda-forge builds as the local rcm-qe:test4b image)
+        run: |
+          mamba install -y -c conda-forge "qe=7.5=h19104ac_2" "openmpi=5.0.10=hee33aa4_2" "libopenblas=0.3.34=pthreads_hf13c14d_2" "fftw=3.3.11=nompi_h3b011a4_100" "scalapack=2.2.0=h606478a_6" "elpa=2025.06.001=mpi_openmpi_h335e491_1" numpy time
+          mamba clean -afy
+          mamba list | grep -iE '^ *(qe|openmpi|libopenblas|fftw|scalapack|elpa|python|numpy) '
+          ln -s "$GITHUB_WORKSPACE/runs/level_c_gaas_alas_test4b/dft" /work
+          nproc; grep -E 'MemTotal|MemAvailable' /proc/meminfo; lscpu | grep 'Model name'
+      - name: Run frozen job ${{ inputs.job_id }}
+        env:
+          OMPI_ALLOW_RUN_AS_ROOT: "1"
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python level_c/gaas_alas/fc1/gh_job.py --job "${{ inputs.job_id }}" --np "${{ inputs.np }}" --out "artifacts/${{ inputs.job_id }}" || echo "gh_job exit $?"
+          cat "artifacts/${{ inputs.job_id }}/result.json" | head -60
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ inputs.job_id }}
+          path: artifacts/${{ inputs.job_id }}
+          if-no-files-found: error
+          retention-days: 90
