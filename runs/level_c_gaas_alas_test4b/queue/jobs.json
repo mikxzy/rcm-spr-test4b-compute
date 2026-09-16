@@ -153,5 +153,18 @@
   "np": 6,
   "pwin_sha256": "c78d112591650af0284d89533d6688ba24de9379f89411c18e82280e246b7660",
   "created": "2026-09-16T14:46:45"
+ },
+ "fc1_relax_c08": {
+  "id": "fc1_relax_c08",
+  "dir": "fc1_relax/chunk-08",
+  "calc": "vc-relax-chunk",
+  "stage": "relax",
+  "deps": [
+   "fc1_relax_c07"
+  ],
+  "n_atoms": 64,
+  "np": 6,
+  "pwin_sha256": "321a23a3a25590e54ef02d5e2100ba76e24cf47b1bc44f1626222ea4a46e0bff",
+  "created": "2026-09-16T19:49:16"
  }
 }
